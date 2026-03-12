@@ -58,6 +58,18 @@ const COUNTRY_NAMES = {
     'YT': 'Mayotte', 'ZA': 'South Africa', 'ZM': 'Zambia', 'ZW': 'Zimbabwe'
 };
 
+// Historic and alternate name redirects (case-insensitive)
+const NAME_REDIRECTS = {
+    'swaziland': 'Eswatini', 'burma': 'Myanmar', 'ceylon': 'Sri Lanka',
+    'bombay': 'Mumbai', 'madras': 'Chennai', 'calcutta': 'Kolkata', 'peking': 'Beijing',
+    'leningrad': 'Saint Petersburg', 'constantinople': 'Istanbul', 'saigon': 'Ho Chi Minh City',
+    'rhodesia': 'Zimbabwe', 'persia': 'Iran', 'siam': 'Thailand', 'formosa': 'Taiwan',
+    'upper volta': 'Burkina Faso', 'kampuchea': 'Cambodia', 'dutch guiana': 'Suriname',
+    'british honduras': 'Belize', 'nyasaland': 'Malawi', 'tanganyika': 'Tanzania',
+    'abyssinia': 'Ethiopia', 'zaire': 'Democratic Republic of the Congo', 'dahomey': 'Benin',
+    'ubangi-shari': 'Central African Republic', 'bechuanaland': 'Botswana'
+};
+
 const cityInput = document.getElementById('city');
 const searchBtn = document.getElementById('search');
 const locateBtn = document.getElementById('locate');
@@ -146,12 +158,19 @@ async function getWeatherByCoords(lat, lon) {
 }
 
 async function getWeather() {
-    const city = cityInput.value.trim();
+    let city = cityInput.value.trim();
     const selectedDate = dateInput.value;
     
     if (!city) {
-        showError('Enter a city name');
+        showError('Please enter a city name');
         return;
+    }
+    
+    // Check for historic/alternate name redirects
+    const cityLower = city.toLowerCase();
+    if (NAME_REDIRECTS[cityLower]) {
+        city = NAME_REDIRECTS[cityLower];
+        cityInput.value = city;
     }
 
     try {
@@ -198,7 +217,10 @@ function showDisambiguation(results, selectedDate) {
         if (!countryName || countryName === 'undefined' || countryName.trim() === '') {
             countryName = COUNTRY_NAMES[loc.country_code] || loc.country_code || '';
         }
-        const country = countryName ? `, ${countryName}` : '';
+        
+        // Avoid duplicate if location name equals country (e.g., "Germany, Germany")
+        const isDuplicate = loc.name === countryName || loc.name === loc.country;
+        const country = (countryName && !isDuplicate) ? `, ${countryName}` : '';
         
         const pop = loc.population ? ` (${(loc.population / 1000).toFixed(0)}k)` : '';
         return `<div class="location-option" data-lat="${loc.latitude}" data-lon="${loc.longitude}" data-name="${loc.name}" data-country="${countryName}">
@@ -288,7 +310,10 @@ function displayWeather(location, weather, selectedDate) {
     const country = location.country && location.country !== 'undefined' && location.country.trim() !== '' 
         ? location.country 
         : '';
-    const countryDisplay = country ? `, ${country}` : '';
+    
+    // Avoid duplicate if location name equals country (e.g., "Germany, Germany")
+    const isDuplicate = location.name === country;
+    const countryDisplay = (country && !isDuplicate) ? `, ${country}` : '';
     
     weatherDiv.innerHTML = `
         <h2>${location.name}${countryDisplay}</h2>
