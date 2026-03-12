@@ -4,6 +4,7 @@ const HISTORICAL_URL = 'https://archive-api.open-meteo.com/v1/archive';
 
 const cityInput = document.getElementById('city');
 const searchBtn = document.getElementById('search');
+const locateBtn = document.getElementById('locate');
 const weatherDiv = document.getElementById('weather');
 const dateInput = document.getElementById('date');
 
@@ -12,12 +13,70 @@ dateInput.value = today;
 dateInput.max = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
 searchBtn.addEventListener('click', getWeather);
+locateBtn.addEventListener('click', getUserLocation);
 cityInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') getWeather();
 });
 dateInput.addEventListener('change', () => {
     if (cityInput.value.trim()) getWeather();
 });
+
+async function getUserLocation() {
+    if (!navigator.geolocation) {
+        showError('Geolocation not supported');
+        return;
+    }
+
+    locateBtn.disabled = true;
+    locateBtn.textContent = '⌛';
+
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            try {
+                await getWeatherByCoords(position.coords.latitude, position.coords.longitude);
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                locateBtn.disabled = false;
+                locateBtn.textContent = '📍';
+            }
+        },
+        (error) => {
+            showError('Location access denied');
+            locateBtn.disabled = false;
+            locateBtn.textContent = '📍';
+        }
+    );
+}
+
+async function getWeatherByCoords(lat, lon) {
+    const selectedDate = dateInput.value;
+    
+    try {
+        const geoResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?latitude=${lat}&longitude=${lon}&count=1&language=en&format=json`);
+        const geoData = await geoResponse.json();
+        
+        const locationName = geoData.results?.[0]?.name || 'Your Location';
+        cityInput.value = locationName;
+        
+        const isHistorical = new Date(selectedDate) < new Date(today);
+        const apiUrl = isHistorical ? HISTORICAL_URL : WEATHER_URL;
+        
+        const params = `latitude=${lat}&longitude=${lon}&start_date=${selectedDate}&end_date=${selectedDate}&daily=temperature_2m_max,temperature_2m_min,weathercode,windspeed_10m_max,winddirection_10m_dominant&temperature_unit=celsius&windspeed_unit=kmh&timezone=auto`;
+        
+        const weatherResponse = await fetch(`${apiUrl}?${params}`);
+        const weatherData = await weatherResponse.json();
+        
+        const location = {
+            name: locationName,
+            country: geoData.results?.[0]?.country || ''
+        };
+        
+        displayWeather(location, weatherData.daily, selectedDate);
+    } catch (error) {
+        throw error;
+    }
+}
 
 async function getWeather() {
     const city = cityInput.value.trim();

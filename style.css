@@ -32,6 +32,22 @@ h1 {
     margin-bottom: 10px;
 }
 
+.locate-btn {
+    padding: 10px 15px;
+    background: #28a745;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.locate-btn:hover {
+    background: #218838;
+}
+
+.locate-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
 .date-picker {
     margin-bottom: 20px;
 }
