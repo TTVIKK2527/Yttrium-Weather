@@ -2,6 +2,12 @@ const GEOCODING_URL = 'https://geocoding-api.open-meteo.com/v1/search';
 const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast';
 const HISTORICAL_URL = 'https://archive-api.open-meteo.com/v1/archive';
 
+// Country code to name mapping for territories without full country names
+const COUNTRY_NAMES = {
+    'PS': 'Palestine', 'FI': 'Finland', 'AX': 'Åland Islands', 'GS': 'South Georgia',
+    'AQ': 'Antarctica', 'BV': 'Bouvet Island', 'TF': 'French Southern Territories'
+};
+
 const cityInput = document.getElementById('city');
 const searchBtn = document.getElementById('search');
 const locateBtn = document.getElementById('locate');
@@ -137,11 +143,15 @@ function showDisambiguation(results, selectedDate) {
         const hasAdmin = loc.admin1 && loc.admin1 !== 'undefined' && loc.admin1.trim() !== '';
         const admin = hasAdmin ? `, ${loc.admin1}` : '';
         
-        const hasCountry = loc.country && loc.country !== 'undefined' && loc.country.trim() !== '';
-        const country = hasCountry ? `, ${loc.country}` : '';
+        // Use country name if available, otherwise look up country_code
+        let countryName = loc.country;
+        if (!countryName || countryName === 'undefined' || countryName.trim() === '') {
+            countryName = COUNTRY_NAMES[loc.country_code] || loc.country_code || '';
+        }
+        const country = countryName ? `, ${countryName}` : '';
         
         const pop = loc.population ? ` (${(loc.population / 1000).toFixed(0)}k)` : '';
-        return `<div class="location-option" data-lat="${loc.latitude}" data-lon="${loc.longitude}" data-name="${loc.name}" data-country="${loc.country || ''}">
+        return `<div class="location-option" data-lat="${loc.latitude}" data-lon="${loc.longitude}" data-name="${loc.name}" data-country="${countryName}">
             📍 ${loc.name}${admin}${country}${pop}
         </div>`;
     }).join('');
