@@ -15,3 +15,5 @@ Enter a city name and click "Get Weather" or press Enter.
 Build with `makepkg -f`.
 
 Run the installed launcher with `yttrium-weather`.
+
+The launcher opens Yttrium Weather in its own desktop window (embedded WebKit view), not in an external browser tab.

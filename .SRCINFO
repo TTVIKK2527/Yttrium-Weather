@@ -1,12 +1,13 @@
 pkgbase = yttrium-weather
 	pkgdesc = Minimal weather web app with geolocation, history, and map view
 	pkgver = 0.1.0alpha
-	pkgrel = 1
-	url = https://github.com/TTVIKK2527/weather-app
+	pkgrel = 2
+	url = https://github.com/TTVIKK2527/Yttrium-Weather
 	arch = any
 	license = custom
 	depends = python
-	depends = xdg-utils
+	depends = python-gobject
+	depends = webkit2gtk-4.1
 	source = index.html
 	source = style.css
 	source = app.js

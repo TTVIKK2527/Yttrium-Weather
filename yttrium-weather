@@ -1,24 +1,64 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env python3
+import os
+import socket
+import threading
+from functools import partial
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
-app_dir="/usr/share/yttrium-weather"
-port="${YTTRIUM_WEATHER_PORT:-8765}"
-url="http://127.0.0.1:${port}"
+import gi
 
-cleanup() {
-    if [[ -n "${server_pid:-}" ]] && kill -0 "$server_pid" 2>/dev/null; then
-        kill "$server_pid" 2>/dev/null || true
-    fi
-}
+gi.require_version('Gtk', '3.0')
+try:
+    gi.require_version('WebKit2', '4.1')
+except ValueError:
+    gi.require_version('WebKit2', '4.0')
 
-trap cleanup EXIT INT TERM
+from gi.repository import Gtk, WebKit2
 
-python3 -m http.server "$port" --directory "$app_dir" >/tmp/yttrium-weather.log 2>&1 &
-server_pid=$!
 
-sleep 1
-xdg-open "$url" >/dev/null 2>&1 || true
+APP_DIR = '/usr/share/yttrium-weather'
 
-echo "Yttrium Weather running at $url"
-echo "Press Ctrl+C to stop."
-wait "$server_pid"
+
+def find_free_port(start=8765, end=8899):
+    for port in range(start, end + 1):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            if sock.connect_ex(('127.0.0.1', port)) != 0:
+                return port
+    raise RuntimeError('No free port available for Yttrium Weather')
+
+
+def start_server(port):
+    handler = partial(SimpleHTTPRequestHandler, directory=APP_DIR)
+    server = ThreadingHTTPServer(('127.0.0.1', port), handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    return server
+
+
+def main():
+    if not os.path.isdir(APP_DIR):
+        raise SystemExit(f'App directory not found: {APP_DIR}')
+
+    port = find_free_port()
+    server = start_server(port)
+
+    window = Gtk.Window(title='Yttrium Weather')
+    window.set_default_size(1100, 760)
+
+    webview = WebKit2.WebView()
+    webview.load_uri(f'http://127.0.0.1:{port}/index.html')
+    window.add(webview)
+
+    def on_destroy(_widget):
+        server.shutdown()
+        server.server_close()
+        Gtk.main_quit()
+
+    window.connect('destroy', on_destroy)
+    window.show_all()
+    Gtk.main()
+
+
+if __name__ == '__main__':
+    main()
