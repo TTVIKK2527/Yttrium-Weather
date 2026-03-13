@@ -1,6 +1,6 @@
 pkgname=yttrium-weather
 pkgver=0.1.0alpha
-pkgrel=2
+pkgrel=3
 pkgdesc='Minimal weather web app with geolocation, history, and map view'
 arch=('any')
 url='https://github.com/TTVIKK2527/Yttrium-Weather'
