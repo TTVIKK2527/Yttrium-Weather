@@ -97,9 +97,26 @@ dateInput.addEventListener('change', () => {
 
 getUserLocation();
 
+async function getLocationByIP() {
+    locationInfo.textContent = 'Using approximate location...';
+    try {
+        const response = await fetch('https://ipwho.is/');
+        const data = await response.json();
+
+        if (!data.success || typeof data.latitude !== 'number' || typeof data.longitude !== 'number') {
+            throw new Error('Could not detect location');
+        }
+
+        await getWeatherByCoords(data.latitude, data.longitude);
+    } catch (error) {
+        locationInfo.textContent = 'Location detection failed';
+        showError('Location access denied and fallback failed');
+    }
+}
+
 async function getUserLocation() {
     if (!navigator.geolocation) {
-        locationInfo.textContent = 'Geolocation not supported';
+        await getLocationByIP();
         return;
     }
 
@@ -119,9 +136,8 @@ async function getUserLocation() {
                 locateBtn.textContent = '🔄 Refresh Location';
             }
         },
-        (error) => {
-            locationInfo.textContent = 'Location access denied';
-            showError('Location access denied');
+        async (_error) => {
+            await getLocationByIP();
             locateBtn.disabled = false;
             locateBtn.textContent = '🔄 Refresh Location';
         }

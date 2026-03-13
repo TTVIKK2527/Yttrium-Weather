@@ -47,6 +47,14 @@ def main():
     window.set_default_size(1100, 760)
 
     webview = WebKit2.WebView()
+
+    def on_permission_request(_webview, request):
+        if isinstance(request, WebKit2.GeolocationPermissionRequest):
+            request.allow()
+            return True
+        return False
+
+    webview.connect('permission-request', on_permission_request)
     webview.load_uri(f'http://127.0.0.1:{port}/index.html')
     window.add(webview)
 
