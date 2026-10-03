@@ -1,7 +1,7 @@
 pkgname=yttrium-weather
-pkgver=0.1.0alpha
-pkgrel=3
-pkgdesc='Minimal weather web app with geolocation, history, and map view'
+pkgver=0.1.3
+pkgrel=1
+pkgdesc='Minimal weather web app with optional device location and seven-day forecasts'
 arch=('any')
 url='https://github.com/TTVIKK2527/Yttrium-Weather'
 license=('custom')
@@ -13,7 +13,13 @@ source=(
   'yttrium-weather'
   'yttrium-weather.desktop'
 )
-sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+sha256sums=(
+  'b476d91d2e17c83bc121669c8aa666848dd79fcfaa9e5e0db59edb801d5c059e'
+  'ec64c8145e313f0351d23356c3ad8b50265a8e762624f4955ff02b5ddf35eb35'
+  '55798e96c2e3e935f52e5d98db045a23f9e34d454a13daef2ba689ca6dfe3d15'
+  '1751dae95e406b467ae88b6042d6915f3aa898711f6cfcc46bce606cd918bfb2'
+  '56e4b9094d041893ffb1a40f61be842397b5d09e241c4f5a64bdbca2522694a2'
+)
 
 package() {
   install -d "$pkgdir/usr/share/yttrium-weather"

@@ -1,19 +1,23 @@
 # Yttrium Weather
 
-Minimalistic weather website/app using Open-Meteo API (free, no API key required).
+Search for a city, select the matching place and view a seven-day forecast with daily high and low temperatures, conditions and maximum wind speed.
 
-## Setup
+Location detection starts automatically and requires browser or desktop permission. The app shows the city, coordinates, time zone and reported accuracy. Broad estimates are labeled approximate. If detection fails or points to the wrong area, city search remains available.
 
-Open `index.html` in a browser.
+## Run locally
 
-## Usage
+Serve this folder with `python3 -m http.server 8000` and open http://localhost:8000. Internet access and JavaScript are required.
 
-Enter a city name and click "Get Weather" or press Enter.
+## Publish
 
-## Arch package
+Deploy `index.html`, `app.js`, `style.css` and `.nojekyll` to an HTTPS static host. No build step, backend or API key is required. Relative asset paths support deployment in a subdirectory.
 
-Build with `makepkg -f`.
+## Desktop app on Arch Linux
 
-Run the installed launcher with `yttrium-weather`.
+Build with `makepkg -f`, install the resulting package with `sudo pacman -U <package-file>`, then launch Yttrium Weather from the application menu or run `yttrium-weather`. The launcher opens an embedded WebKit window and serves app files only on the local loopback interface.
 
-The launcher opens Yttrium Weather in its own desktop window (embedded WebKit view), not in an external browser tab.
+## Data and privacy
+
+Open-Meteo supplies city search and weather forecasts. BigDataCloud resolves permitted device coordinates to a city. Coordinates are sent to those services for those purposes. The app does not save location history or include analytics. The browser or operating system chooses the device location provider and its accuracy. Switching weather services cannot improve the detected coordinates.
+
+Weather data attribution: [Open-Meteo](https://open-meteo.com/), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).

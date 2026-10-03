@@ -1,391 +1,166 @@
-const GEOCODING_URL = 'https://geocoding-api.open-meteo.com/v1/search';
-const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast';
-const HISTORICAL_URL = 'https://archive-api.open-meteo.com/v1/archive';
-
-// Country code to name mapping for territories without full country names
-const COUNTRY_NAMES = {
-    'AD': 'Andorra', 'AE': 'United Arab Emirates', 'AF': 'Afghanistan', 'AG': 'Antigua and Barbuda',
-    'AI': 'Anguilla', 'AL': 'Albania', 'AM': 'Armenia', 'AO': 'Angola', 'AQ': 'Antarctica',
-    'AR': 'Argentina', 'AS': 'American Samoa', 'AT': 'Austria', 'AU': 'Australia', 'AW': 'Aruba',
-    'AX': 'Åland Islands', 'AZ': 'Azerbaijan', 'BA': 'Bosnia and Herzegovina', 'BB': 'Barbados',
-    'BD': 'Bangladesh', 'BE': 'Belgium', 'BF': 'Burkina Faso', 'BG': 'Bulgaria', 'BH': 'Bahrain',
-    'BI': 'Burundi', 'BJ': 'Benin', 'BL': 'Saint Barthélemy', 'BM': 'Bermuda', 'BN': 'Brunei',
-    'BO': 'Bolivia', 'BQ': 'Caribbean Netherlands', 'BR': 'Brazil', 'BS': 'Bahamas', 'BT': 'Bhutan',
-    'BV': 'Bouvet Island', 'BW': 'Botswana', 'BY': 'Belarus', 'BZ': 'Belize', 'CA': 'Canada',
-    'CC': 'Cocos Islands', 'CD': 'DR Congo', 'CF': 'Central African Republic', 'CG': 'Congo',
-    'CH': 'Switzerland', 'CI': 'Côte d\'Ivoire', 'CK': 'Cook Islands', 'CL': 'Chile', 'CM': 'Cameroon',
-    'CN': 'China', 'CO': 'Colombia', 'CR': 'Costa Rica', 'CU': 'Cuba', 'CV': 'Cape Verde',
-    'CW': 'Curaçao', 'CX': 'Christmas Island', 'CY': 'Cyprus', 'CZ': 'Czechia', 'DE': 'Germany',
-    'DJ': 'Djibouti', 'DK': 'Denmark', 'DM': 'Dominica', 'DO': 'Dominican Republic', 'DZ': 'Algeria',
-    'EC': 'Ecuador', 'EE': 'Estonia', 'EG': 'Egypt', 'EH': 'Western Sahara', 'ER': 'Eritrea',
-    'ES': 'Spain', 'ET': 'Ethiopia', 'FI': 'Finland', 'FJ': 'Fiji', 'FK': 'Falkland Islands',
-    'FM': 'Micronesia', 'FO': 'Faroe Islands', 'FR': 'France', 'GA': 'Gabon', 'GB': 'United Kingdom',
-    'GD': 'Grenada', 'GE': 'Georgia', 'GF': 'French Guiana', 'GG': 'Guernsey', 'GH': 'Ghana',
-    'GI': 'Gibraltar', 'GL': 'Greenland', 'GM': 'Gambia', 'GN': 'Guinea', 'GP': 'Guadeloupe',
-    'GQ': 'Equatorial Guinea', 'GR': 'Greece', 'GS': 'South Georgia', 'GT': 'Guatemala', 'GU': 'Guam',
-    'GW': 'Guinea-Bissau', 'GY': 'Guyana', 'HK': 'Hong Kong', 'HM': 'Heard Island', 'HN': 'Honduras',
-    'HR': 'Croatia', 'HT': 'Haiti', 'HU': 'Hungary', 'ID': 'Indonesia', 'IE': 'Ireland', 'IL': 'Israel',
-    'IM': 'Isle of Man', 'IN': 'India', 'IO': 'British Indian Ocean Territory', 'IQ': 'Iraq',
-    'IR': 'Iran', 'IS': 'Iceland', 'IT': 'Italy', 'JE': 'Jersey', 'JM': 'Jamaica', 'JO': 'Jordan',
-    'JP': 'Japan', 'KE': 'Kenya', 'KG': 'Kyrgyzstan', 'KH': 'Cambodia', 'KI': 'Kiribati',
-    'KM': 'Comoros', 'KN': 'Saint Kitts and Nevis', 'KP': 'North Korea', 'KR': 'South Korea',
-    'KW': 'Kuwait', 'KY': 'Cayman Islands', 'KZ': 'Kazakhstan', 'LA': 'Laos', 'LB': 'Lebanon',
-    'LC': 'Saint Lucia', 'LI': 'Liechtenstein', 'LK': 'Sri Lanka', 'LR': 'Liberia', 'LS': 'Lesotho',
-    'LT': 'Lithuania', 'LU': 'Luxembourg', 'LV': 'Latvia', 'LY': 'Libya', 'MA': 'Morocco',
-    'MC': 'Monaco', 'MD': 'Moldova', 'ME': 'Montenegro', 'MF': 'Saint Martin', 'MG': 'Madagascar',
-    'MH': 'Marshall Islands', 'MK': 'North Macedonia', 'ML': 'Mali', 'MM': 'Myanmar', 'MN': 'Mongolia',
-    'MO': 'Macau', 'MP': 'Northern Mariana Islands', 'MQ': 'Martinique', 'MR': 'Mauritania',
-    'MS': 'Montserrat', 'MT': 'Malta', 'MU': 'Mauritius', 'MV': 'Maldives', 'MW': 'Malawi',
-    'MX': 'Mexico', 'MY': 'Malaysia', 'MZ': 'Mozambique', 'NA': 'Namibia', 'NC': 'New Caledonia',
-    'NE': 'Niger', 'NF': 'Norfolk Island', 'NG': 'Nigeria', 'NI': 'Nicaragua', 'NL': 'Netherlands',
-    'NO': 'Norway', 'NP': 'Nepal', 'NR': 'Nauru', 'NU': 'Niue', 'NZ': 'New Zealand', 'OM': 'Oman',
-    'PA': 'Panama', 'PE': 'Peru', 'PF': 'French Polynesia', 'PG': 'Papua New Guinea', 'PH': 'Philippines',
-    'PK': 'Pakistan', 'PL': 'Poland', 'PM': 'Saint Pierre and Miquelon', 'PN': 'Pitcairn Islands',
-    'PR': 'Puerto Rico', 'PS': 'Palestine', 'PT': 'Portugal', 'PW': 'Palau', 'PY': 'Paraguay',
-    'QA': 'Qatar', 'RE': 'Réunion', 'RO': 'Romania', 'RS': 'Serbia', 'RU': 'Russia', 'RW': 'Rwanda',
-    'SA': 'Saudi Arabia', 'SB': 'Solomon Islands', 'SC': 'Seychelles', 'SD': 'Sudan', 'SE': 'Sweden',
-    'SG': 'Singapore', 'SH': 'Saint Helena', 'SI': 'Slovenia', 'SJ': 'Svalbard and Jan Mayen',
-    'SK': 'Slovakia', 'SL': 'Sierra Leone', 'SM': 'San Marino', 'SN': 'Senegal', 'SO': 'Somalia',
-    'SR': 'Suriname', 'SS': 'South Sudan', 'ST': 'São Tomé and Príncipe', 'SV': 'El Salvador',
-    'SX': 'Sint Maarten', 'SY': 'Syria', 'SZ': 'Eswatini', 'TC': 'Turks and Caicos Islands',
-    'TD': 'Chad', 'TF': 'French Southern Territories', 'TG': 'Togo', 'TH': 'Thailand', 'TJ': 'Tajikistan',
-    'TK': 'Tokelau', 'TL': 'Timor-Leste', 'TM': 'Turkmenistan', 'TN': 'Tunisia', 'TO': 'Tonga',
-    'TR': 'Turkey', 'TT': 'Trinidad and Tobago', 'TV': 'Tuvalu', 'TW': 'Taiwan', 'TZ': 'Tanzania',
-    'UA': 'Ukraine', 'UG': 'Uganda', 'UM': 'U.S. Minor Outlying Islands', 'US': 'United States',
-    'UY': 'Uruguay', 'UZ': 'Uzbekistan', 'VA': 'Vatican City', 'VC': 'Saint Vincent and the Grenadines',
-    'VE': 'Venezuela', 'VG': 'British Virgin Islands', 'VI': 'U.S. Virgin Islands', 'VN': 'Vietnam',
-    'VU': 'Vanuatu', 'WF': 'Wallis and Futuna', 'WS': 'Samoa', 'XK': 'Kosovo', 'YE': 'Yemen',
-    'YT': 'Mayotte', 'ZA': 'South Africa', 'ZM': 'Zambia', 'ZW': 'Zimbabwe'
-};
-
-// Historic and alternate name redirects (case-insensitive)
-const NAME_REDIRECTS = {
-    'swaziland': 'Eswatini', 'burma': 'Myanmar', 'ceylon': 'Sri Lanka',
-    'bombay': 'Mumbai', 'madras': 'Chennai', 'calcutta': 'Kolkata', 'peking': 'Beijing',
-    'leningrad': 'Saint Petersburg', 'constantinople': 'Istanbul', 'saigon': 'Ho Chi Minh City',
-    'rhodesia': 'Zimbabwe', 'persia': 'Iran', 'siam': 'Thailand', 'formosa': 'Taiwan',
-    'upper volta': 'Burkina Faso', 'kampuchea': 'Cambodia', 'dutch guiana': 'Suriname',
-    'british honduras': 'Belize', 'nyasaland': 'Malawi', 'tanganyika': 'Tanzania',
-    'abyssinia': 'Ethiopia', 'zaire': 'Democratic Republic of the Congo', 'dahomey': 'Benin',
-    'ubangi-shari': 'Central African Republic', 'bechuanaland': 'Botswana',
-    'western sahara': 'Laayoune', 'sahrawi arab democratic republic': 'Laayoune'
-};
-
+'use strict';
+const form = document.getElementById('search-form');
 const cityInput = document.getElementById('city');
-const searchBtn = document.getElementById('search');
-const locateBtn = document.getElementById('locate');
-const weatherDiv = document.getElementById('weather');
-const dateInput = document.getElementById('date');
-const locationInfo = document.getElementById('location-info');
-const mapContainer = document.getElementById('map');
+const searchButton = document.getElementById('search');
+const status = document.getElementById('status');
+const locations = document.getElementById('locations');
+const weather = document.getElementById('weather');
+const locateButton = document.getElementById('locate');
+let locationAttempt = 0;
+let activeRequest;
 
-let map = null;
-let marker = null;
-
-const today = new Date().toISOString().split('T')[0];
-dateInput.value = today;
-dateInput.max = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-searchBtn.addEventListener('click', getWeather);
-locateBtn.addEventListener('click', getUserLocation);
-cityInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') getWeather();
-});
-dateInput.addEventListener('change', () => {
-    if (cityInput.value.trim()) getWeather();
-});
-
-getUserLocation();
-
-async function getLocationByIP() {
-    locationInfo.textContent = 'Using approximate location...';
-    try {
-        const response = await fetch('https://ipwho.is/');
-        const data = await response.json();
-
-        if (!data.success || typeof data.latitude !== 'number' || typeof data.longitude !== 'number') {
-            throw new Error('Could not detect location');
-        }
-
-        await getWeatherByCoords(data.latitude, data.longitude);
-    } catch (error) {
-        locationInfo.textContent = 'Location detection failed';
-        showError('Location access denied and fallback failed');
-    }
+function element(tag, text, className) {
+  const node = document.createElement(tag);
+  if (text !== undefined) node.textContent = text;
+  if (className) node.className = className;
+  return node;
 }
-
-async function getUserLocation() {
-    if (!navigator.geolocation) {
-        await getLocationByIP();
-        return;
-    }
-
-    locateBtn.disabled = true;
-    locateBtn.textContent = '⌛ Detecting...';
-    locationInfo.textContent = 'Detecting your location...';
-
-    navigator.geolocation.getCurrentPosition(
-        async (position) => {
-            try {
-                await getWeatherByCoords(position.coords.latitude, position.coords.longitude);
-            } catch (error) {
-                locationInfo.textContent = 'Location detection failed';
-                showError(error.message);
-            } finally {
-                locateBtn.disabled = false;
-                locateBtn.textContent = '🔄 Refresh Location';
-            }
-        },
-        async (_error) => {
-            await getLocationByIP();
-            locateBtn.disabled = false;
-            locateBtn.textContent = '🔄 Refresh Location';
-        }
-    );
+function condition(code) {
+  if (code === 0) return '☀️ Clear sky';
+  if ([1, 2].includes(code)) return '🌤️ Partly clear';
+  if (code === 3) return '☁️ Overcast';
+  if ([45, 48].includes(code)) return '🌫️ Fog';
+  if ([51, 53, 55, 56, 57].includes(code)) return '🌦️ Drizzle';
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return '🌧️ Rain';
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return '❄️ Snow';
+  if ([95, 96, 99].includes(code)) return '⛈️ Thunderstorm';
+  return 'Conditions unavailable';
 }
-
-async function getWeatherByCoords(lat, lon) {
-    const selectedDate = dateInput.value;
-    
-    try {
-        const reverseGeoUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`;
-        const reverseGeoResponse = await fetch(reverseGeoUrl);
-        const reverseGeoData = await reverseGeoResponse.json();
-        
-        const locationName = reverseGeoData.city || reverseGeoData.locality || reverseGeoData.principalSubdivision || 'Unknown Location';
-        const country = reverseGeoData.countryName || '';
-        
-        cityInput.value = locationName;
-        currentCity = locationName;
-        locationInfo.innerHTML = `<strong>📍 ${locationName}</strong>${country ? '<br><small>' + country + '</small>' : ''}`;
-        
-        const isHistorical = new Date(selectedDate) < new Date(today);
-        const apiUrl = isHistorical ? HISTORICAL_URL : WEATHER_URL;
-        
-        const params = `latitude=${lat}&longitude=${lon}&start_date=${selectedDate}&end_date=${selectedDate}&daily=temperature_2m_max,temperature_2m_min,weathercode,windspeed_10m_max,winddirection_10m_dominant&temperature_unit=celsius&windspeed_unit=kmh&timezone=auto`;
-        
-        const weatherResponse = await fetch(`${apiUrl}?${params}`);
-        const weatherData = await weatherResponse.json();
-        
-        const location = {
-            name: locationName,
-            country: country || 'Unknown'
-        };
-        
-        displayWeather(location, weatherData.daily, selectedDate);
-        updateMap(lat, lon, locationName);
-    } catch (error) {
-        throw error;
-    }
+async function json(url, signal) {
+  const response = await fetch(url, { signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]) });
+  if (!response.ok) throw new Error('Weather service is unavailable. Please try again.');
+  const data = await response.json();
+  if (data.error) throw new Error('Weather service could not complete the request.');
+  return data;
 }
-
-async function getWeather() {
-    let city = cityInput.value.trim();
-    const selectedDate = dateInput.value;
-    
-    if (!city) {
-        showError('Please enter a city name');
-        return;
-    }
-    
-    // Check for historic/alternate name redirects
-    const cityLower = city.toLowerCase();
-    if (NAME_REDIRECTS[cityLower]) {
-        city = NAME_REDIRECTS[cityLower];
-        cityInput.value = city;
-    }
-
-    try {
-        const encodedCity = encodeURIComponent(city);
-        const geoResponse = await fetch(`${GEOCODING_URL}?name=${encodedCity}&count=10&language=en&format=json`);
-        const geoData = await geoResponse.json();
-        
-        if (!geoData.results || geoData.results.length === 0) {
-            throw new Error('City not found');
-        }
-
-        // If multiple results, show disambiguation
-        if (geoData.results.length > 1) {
-            showDisambiguation(geoData.results, selectedDate);
-            return;
-        }
-
-        const location = geoData.results[0];
-        fetchWeatherForLocation(location, selectedDate);
-    } catch (error) {
-        showError(error.message);
-    }
+function begin(message) {
+  activeRequest?.abort();
+  activeRequest = new AbortController();
+  status.textContent = message;
+  weather.replaceChildren();
+  locations.replaceChildren();
+  searchButton.disabled = true;
+  return activeRequest;
 }
-
-function showDisambiguation(results, selectedDate) {
-    const uniqueResults = results
-        .filter((loc, index, self) => 
-            index === self.findIndex(l => l.name === loc.name && l.country === loc.country)
-        )
-        .slice(0, 8);
-    
-    if (uniqueResults.length === 1) {
-        fetchWeatherForLocation(uniqueResults[0], selectedDate);
-        return;
-    }
-    
-    const options = uniqueResults.map(loc => {
-        // Handle undefined, null, or string "undefined" for admin1 and country
-        const hasAdmin = loc.admin1 && loc.admin1 !== 'undefined' && loc.admin1.trim() !== '';
-        const admin = hasAdmin ? `, ${loc.admin1}` : '';
-        
-        // Use country name if available, otherwise look up country_code
-        let countryName = loc.country;
-        if (!countryName || countryName === 'undefined' || countryName.trim() === '') {
-            countryName = COUNTRY_NAMES[loc.country_code] || loc.country_code || '';
-        }
-        
-        // Avoid duplicate if location name equals country (e.g., "Germany, Germany")
-        const isDuplicate = loc.name === countryName || loc.name === loc.country;
-        const country = (countryName && !isDuplicate) ? `, ${countryName}` : '';
-        
-        const pop = loc.population ? ` (${(loc.population / 1000).toFixed(0)}k)` : '';
-        return `<div class="location-option" data-lat="${loc.latitude}" data-lon="${loc.longitude}" data-name="${loc.name}" data-country="${countryName}">
-            📍 ${loc.name}${admin}${country}${pop}
-        </div>`;
-    }).join('');
-    
-    weatherDiv.innerHTML = `
-        <div class="disambiguation">
-            <h3>Multiple locations found. Please select:</h3>
-            <div class="location-options">
-                ${options}
-            </div>
-        </div>
-    `;
-    
-    document.querySelectorAll('.location-option').forEach(option => {
-        option.addEventListener('click', () => {
-            const location = {
-                latitude: option.dataset.lat,
-                longitude: option.dataset.lon,
-                name: option.dataset.name,
-                country: option.dataset.country
-            };
-            // Avoid duplicate if location name equals country (e.g., "Germany, Germany")
-            const isDuplicate = location.name === location.country;
-            cityInput.value = isDuplicate ? location.name : `${location.name}, ${location.country}`;
-            currentCity = cityInput.value;
-            fetchWeatherForLocation(location, selectedDate);
-        });
+function fail(error, request) {
+  if (request !== activeRequest || error.name === 'AbortError') return;
+  status.textContent = error.name === 'TimeoutError' ? 'Weather service timed out. Please try again.' : error instanceof TypeError ? 'Could not connect. Check your connection and try again.' : error.message;
+}
+function label(location) {
+  return [location.name, location.admin1, location.country].filter(Boolean).join(', ');
+}
+function formatValue(value, unit) {
+  return typeof value === 'number' && Number.isFinite(value) ? `${Math.round(value)}${unit}` : 'Unavailable';
+}
+async function forecast(location) {
+  const request = begin('Loading forecast…');
+  try {
+    const url = new URL('https://api.open-meteo.com/v1/forecast');
+    url.search = new URLSearchParams({ latitude: location.latitude, longitude: location.longitude,
+      daily: 'temperature_2m_max,temperature_2m_min,weather_code,wind_speed_10m_max', timezone: 'auto', forecast_days: '7' });
+    const data = await json(url, request.signal);
+    if (request !== activeRequest) return;
+    const daily = data.daily;
+    if (!daily?.time?.length) throw new Error('No forecast is available for this location.');
+    const grid = element('div', undefined, 'forecast');
+    daily.time.forEach((date, i) => {
+      const card = element('article', undefined, 'day');
+      const heading = new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+      card.append(element('h3', heading), element('p', condition(daily.weather_code?.[i])),
+        element('p', `High: ${formatValue(daily.temperature_2m_max?.[i], ' °C')}`),
+        element('p', `Low: ${formatValue(daily.temperature_2m_min?.[i], ' °C')}`),
+        element('p', `Wind: ${formatValue(daily.wind_speed_10m_max?.[i], ' km/h')}`));
+      grid.append(card);
     });
-}
-
-function fetchWeatherForLocation(location, selectedDate) {
-    const isHistorical = new Date(selectedDate) < new Date(today);
-    const apiUrl = isHistorical ? HISTORICAL_URL : WEATHER_URL;
-    
-    const params = `latitude=${location.latitude}&longitude=${location.longitude}&start_date=${selectedDate}&end_date=${selectedDate}&daily=temperature_2m_max,temperature_2m_min,weathercode,windspeed_10m_max,winddirection_10m_dominant&temperature_unit=celsius&windspeed_unit=kmh&timezone=auto`;
-    
-    fetch(`${apiUrl}?${params}`)
-        .then(response => response.json())
-        .then(weatherData => {
-            currentCity = cityInput.value;
-            displayWeather(location, weatherData.daily, selectedDate);
-            updateMap(location.latitude, location.longitude, location.name);
-        })
-        .catch(error => showError(error.message));
-}
-
-function displayWeather(location, weather, selectedDate) {
-    const tempMax = Math.round(weather.temperature_2m_max[0]);
-    const tempMin = Math.round(weather.temperature_2m_min[0]);
-    const windSpeed = Math.round(weather.windspeed_10m_max[0]);
-    const windDir = weather.winddirection_10m_dominant[0];
-    const date = new Date(selectedDate);
-    const dateStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-    const isToday = selectedDate === today;
-    
-    const weatherData = {
-        0: { desc: 'Clear sky', icon: '☀️' },
-        1: { desc: 'Mainly clear', icon: '🌤️' },
-        2: { desc: 'Partly cloudy', icon: '⛅' },
-        3: { desc: 'Overcast', icon: '☁️' },
-        45: { desc: 'Foggy', icon: '🌫️' },
-        48: { desc: 'Foggy', icon: '🌫️' },
-        51: { desc: 'Light drizzle', icon: '🌦️' },
-        53: { desc: 'Drizzle', icon: '🌧️' },
-        55: { desc: 'Heavy drizzle', icon: '🌧️' },
-        61: { desc: 'Light rain', icon: '🌧️' },
-        63: { desc: 'Rain', icon: '🌧️' },
-        65: { desc: 'Heavy rain', icon: '⛈️' },
-        71: { desc: 'Light snow', icon: '🌨️' },
-        73: { desc: 'Snow', icon: '❄️' },
-        75: { desc: 'Heavy snow', icon: '❄️' },
-        77: { desc: 'Snow grains', icon: '❄️' },
-        80: { desc: 'Light showers', icon: '🌦️' },
-        81: { desc: 'Showers', icon: '🌧️' },
-        82: { desc: 'Heavy showers', icon: '⛈️' },
-        85: { desc: 'Light snow showers', icon: '🌨️' },
-        86: { desc: 'Snow showers', icon: '🌨️' },
-        95: { desc: 'Thunderstorm', icon: '⛈️' },
-        96: { desc: 'Thunderstorm with hail', icon: '⛈️' },
-        99: { desc: 'Heavy thunderstorm', icon: '⛈️' }
-    };
-    
-    const weatherInfo = weatherData[weather.weathercode[0]] || { desc: 'Unknown', icon: '🌍' };
-    const windArrow = getWindArrow(windDir);
-    
-    // Handle undefined, null, or string "undefined" for country
-    const country = location.country && location.country !== 'undefined' && location.country.trim() !== '' 
-        ? location.country 
-        : '';
-    
-    // Avoid duplicate if location name equals country (e.g., "Germany, Germany")
-    const isDuplicate = location.name === country;
-    const countryDisplay = (country && !isDuplicate) ? `, ${country}` : '';
-    
-    weatherDiv.innerHTML = `
-        <h2>${location.name}${countryDisplay}</h2>
-        <div class="date-time">${dateStr}${isToday ? ' (Today)' : ''}</div>
-        <div class="main-temp">
-            <span class="icon">${weatherInfo.icon}</span>
-            <div class="temp-range">
-                <span class="temp-high">${tempMax}°C</span>
-                <span class="temp-low">${tempMin}°C</span>
-            </div>
-        </div>
-        <div class="weather-info">
-            <div><strong>Condition:</strong> ${weatherInfo.desc}</div>
-            <div><strong>Wind:</strong> ${windArrow} ${windSpeed} km/h</div>
-        </div>
-    `;
-}
-
-function getWindArrow(degrees) {
-    const arrows = ['↓', '↙', '←', '↖', '↑', '↗', '→', '↘'];
-    const index = Math.round(degrees / 45) % 8;
-    return arrows[index];
-}
-
-function updateMap(lat, lon, locationName) {
-    // Show the map container
-    mapContainer.classList.add('visible');
-    
-    // Initialize map if it doesn't exist
-    if (!map) {
-        map = L.map('map').setView([lat, lon], 10);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 19
-        }).addTo(map);
-        marker = L.marker([lat, lon]).addTo(map);
-    } else {
-        // Update existing map
-        map.setView([lat, lon], 10);
-        marker.setLatLng([lat, lon]);
+    const title = element('h2', label(location));
+    const coordinates = `${Math.abs(location.latitude).toFixed(3)}° ${location.latitude < 0 ? 'S' : 'N'}, ${Math.abs(location.longitude).toFixed(3)}° ${location.longitude < 0 ? 'W' : 'E'}`;
+    weather.append(title, element('p', `Coordinates: ${coordinates} · Forecast time zone: ${data.timezone || 'Not provided'}`));
+    if (location.detected) {
+      const accuracy = Number.isFinite(location.accuracy) ? `${Math.round(location.accuracy)} metres` : 'not reported';
+      weather.append(element('p', `Device location accuracy: ${accuracy}. ${location.accuracy > 5000 ? 'This is a broad area estimate; search for your city for a better forecast.' : 'City name is the nearest locality to the detected coordinates.'}`));
+      resolveCity(location, title, request);
     }
-    
-    // Update marker popup
-    marker.bindPopup(`<strong>${locationName}</strong>`).openPopup();
+    weather.append(grid);
+    status.textContent = 'Forecast loaded. Dates follow the selected location’s time zone.';
+  } catch (error) { fail(error, request); }
+  finally { if (request === activeRequest) searchButton.disabled = false; }
 }
+form.addEventListener('submit', async event => {
+  event.preventDefault();
+  const city = cityInput.value.trim();
+  if (city.length < 2) { status.textContent = 'Enter at least two characters for the city name.'; return; }
+  locationAttempt++;
+  locateButton.disabled = false;
+  const request = begin('Searching for cities…');
+  try {
+    const url = new URL('https://geocoding-api.open-meteo.com/v1/search');
+    url.search = new URLSearchParams({ name: city, count: '5', language: 'en', format: 'json' });
+    const data = await json(url, request.signal);
+    if (request !== activeRequest) return;
+    if (!data.results?.length) throw new Error('City not found. Check the spelling and try again.');
+    if (data.results.length === 1) { await forecast(data.results[0]); return; }
+    status.textContent = 'Choose your city:';
+    data.results.forEach(location => {
+      const button = element('button', label(location), 'location-option');
+      button.type = 'button';
+      button.addEventListener('click', () => forecast(location));
+      locations.append(button);
+    });
+  } catch (error) { fail(error, request); }
+  finally { if (request === activeRequest) searchButton.disabled = false; }
+});
 
-function showError(message) {
-    weatherDiv.innerHTML = `<div class="error">${message}</div>`;
-    mapContainer.classList.remove('visible');
+function detectLocation() {
+  const attempt = ++locationAttempt;
+  activeRequest?.abort();
+  activeRequest = undefined;
+  searchButton.disabled = false;
+  locations.replaceChildren();
+  weather.replaceChildren();
+  if (!navigator.geolocation) {
+    status.textContent = 'Location is unavailable in this browser. Search for a city instead.';
+    cityInput.focus();
+    return;
+  }
+  locateButton.disabled = true;
+  status.textContent = 'Finding your location… You can still search for a city.';
+  let completed = false;
+  const fallback = message => {
+    if (completed || attempt !== locationAttempt) return;
+    completed = true;
+    clearTimeout(watchdog);
+    locateButton.disabled = false;
+    status.textContent = message + ' Search for a city instead.';
+    cityInput.focus();
+  };
+  const watchdog = setTimeout(() => fallback('Location request timed out.'), 21000);
+  try {
+    navigator.geolocation.getCurrentPosition(position => {
+      if (completed || attempt !== locationAttempt) return;
+      const { latitude, longitude, accuracy } = position.coords;
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
+        fallback('Location returned invalid coordinates.'); return;
+      }
+      completed = true;
+      clearTimeout(watchdog);
+      locateButton.disabled = false;
+      forecast({ name: 'Detected location — looking up city…', detected: true, latitude, longitude, accuracy });
+    }, error => fallback(error.code === 1 ? 'Location permission was denied.' : error.code === 3 ? 'Location request timed out.' : 'Your location could not be determined.'),
+    { timeout: 20000, maximumAge: 0, enableHighAccuracy: true });
+  } catch (error) { fallback('Location is unavailable in this browser.'); }
+}
+locateButton.addEventListener('click', detectLocation);
+detectLocation();
+
+async function resolveCity(location, title, request) {
+  try {
+    const url = new URL('https://api.bigdatacloud.net/data/reverse-geocode-client');
+    url.search = new URLSearchParams({ latitude: location.latitude, longitude: location.longitude, localityLanguage: 'en' });
+    const place = await json(url, request.signal);
+    if (request !== activeRequest) return;
+    const city = place.city || place.locality || place.principalSubdivision;
+    title.textContent = city ? `${location.accuracy > 5000 ? 'Approximate area: ' : ''}${[city, place.countryName].filter(Boolean).join(', ')}` : 'Detected location — city name unavailable';
+  } catch (error) {
+    if (request === activeRequest) title.textContent = 'Detected location — city name unavailable';
+  }
 }

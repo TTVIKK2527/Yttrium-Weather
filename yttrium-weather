@@ -16,7 +16,9 @@ except ValueError:
 from gi.repository import Gtk, WebKit2
 
 
-APP_DIR = '/usr/share/yttrium-weather'
+APP_DIR = os.path.dirname(os.path.realpath(__file__))
+if not os.path.isfile(os.path.join(APP_DIR, 'index.html')):
+    APP_DIR = '/usr/share/yttrium-weather'
 
 
 def find_free_port(start=8765, end=8899):
@@ -28,7 +30,7 @@ def find_free_port(start=8765, end=8899):
     raise RuntimeError('No free port available for Yttrium Weather')
 
 
-def start_server(port):
+def start_server(port=0):
     handler = partial(SimpleHTTPRequestHandler, directory=APP_DIR)
     server = ThreadingHTTPServer(('127.0.0.1', port), handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -40,8 +42,8 @@ def main():
     if not os.path.isdir(APP_DIR):
         raise SystemExit(f'App directory not found: {APP_DIR}')
 
-    port = find_free_port()
-    server = start_server(port)
+    server = start_server()
+    port = server.server_port
 
     window = Gtk.Window(title='Yttrium Weather')
     window.set_default_size(1100, 760)
@@ -50,9 +52,19 @@ def main():
 
     def on_permission_request(_webview, request):
         if isinstance(request, WebKit2.GeolocationPermissionRequest):
-            request.allow()
+            dialog = Gtk.MessageDialog(transient_for=window, modal=True,
+                message_type=Gtk.MessageType.QUESTION, buttons=Gtk.ButtonsType.YES_NO,
+                text='Use your device location for this forecast?')
+            dialog.format_secondary_text('Coordinates will be sent to Open-Meteo for weather and BigDataCloud for the city name. Choose No to search for a city instead.')
+            answer = dialog.run()
+            dialog.destroy()
+            if answer == Gtk.ResponseType.YES:
+                request.allow()
+            else:
+                request.deny()
             return True
-        return False
+        request.deny()
+        return True
 
     webview.connect('permission-request', on_permission_request)
     webview.load_uri(f'http://127.0.0.1:{port}/index.html')

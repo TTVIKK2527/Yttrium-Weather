@@ -1,31 +1,29 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yttrium Weather</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Yttrium Weather</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
 </head>
 <body>
-    <div class="sidebar">
-        <h3>Your Location</h3>
-        <div id="location-info" class="location-info">Detecting...</div>
-        <button id="locate" class="locate-btn">🔄 Refresh Location</button>
-    </div>
-    <div class="container">
-        <h1>Yttrium Weather</h1>
-        <div class="search">
-            <input type="text" id="city" placeholder="City name (e.g., Tokyo, Москва, 北京)" autofocus>
-            <button id="search">Get Weather</button>
-        </div>
-        <div class="date-picker">
-            <input type="date" id="date" />
-        </div>
-        <div id="weather" class="weather"></div>
-        <div id="map" class="map-container"></div>
-    </div>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js"></script>
+  <main class="container">
+    <div class="eyebrow">YOUR DAILY OUTLOOK</div><h1>Yttrium <span>Weather</span></h1>
+    <p>A little clarity for the week ahead. Search a city or use your location.</p>
+    <form id="search-form" class="search">
+      <div class="city-field">
+        <label for="city">City name</label>
+        <input id="city" name="city" placeholder="e.g. Tallinn" required minlength="2" maxlength="100" autocomplete="off">
+      </div>
+      <button id="search" type="submit">Get Weather</button>
+    </form>
+    <button id="locate" type="button" class="secondary">◎ Detect location again</button><p class="location-note">Location detection starts automatically. Your browser asks permission; coordinates are sent to Open-Meteo for weather and BigDataCloud for the city name. You can search manually instead.</p>
+    <div id="status" role="status" aria-live="polite"></div>
+    <div id="locations" class="location-options"></div>
+    <section id="weather" class="weather" aria-label="Weather forecast"><div class="empty"><span>☀</span><h2>What’s the sky doing?</h2><p>Your seven-day outlook will appear here.</p></div></section>
+    <footer>Weather data: <a href="https://open-meteo.com/">Open-Meteo</a>, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</footer>
+    <noscript>Enable JavaScript to search for weather.</noscript>
+  </main>
 </body>
 </html>
