@@ -2,7 +2,7 @@
 
 Search for a city, select the matching place and view a seven-day forecast with daily high and low temperatures, conditions and maximum wind speed.
 
-Location detection starts automatically and requires browser or desktop permission. The app shows the city, coordinates, time zone and reported accuracy. Broad estimates are labeled approximate. If detection fails or points to the wrong area, city search remains available.
+Location detection starts automatically and requires browser or desktop permission. If the high-accuracy request fails, one standard request is attempted. A failed detection keeps the previous forecast visible. Each forecast identifies whether its location came from city search or the device. The app shows the city, coordinates, time zone and reported accuracy. Broad estimates are labeled approximate. If detection fails or points to the wrong area, city search remains available.
 
 ## Run locally
 

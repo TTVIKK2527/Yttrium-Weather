@@ -74,7 +74,7 @@ async function forecast(location) {
     });
     const title = element('h2', label(location));
     const coordinates = `${Math.abs(location.latitude).toFixed(3)}° ${location.latitude < 0 ? 'S' : 'N'}, ${Math.abs(location.longitude).toFixed(3)}° ${location.longitude < 0 ? 'W' : 'E'}`;
-    weather.append(title, element('p', `Coordinates: ${coordinates} · Forecast time zone: ${data.timezone || 'Not provided'}`));
+    weather.append(title, element('p', `Location source: ${location.detected ? 'Device location' : 'City search'} · Coordinates: ${coordinates} · Forecast time zone: ${data.timezone || 'Not provided'}`));
     if (location.detected) {
       const accuracy = Number.isFinite(location.accuracy) ? `${Math.round(location.accuracy)} metres` : 'not reported';
       weather.append(element('p', `Device location accuracy: ${accuracy}. ${location.accuracy > 5000 ? 'This is a broad area estimate; search for your city for a better forecast.' : 'City name is the nearest locality to the detected coordinates.'}`));
@@ -116,7 +116,6 @@ function detectLocation() {
   activeRequest = undefined;
   searchButton.disabled = false;
   locations.replaceChildren();
-  weather.replaceChildren();
   if (!navigator.geolocation) {
     status.textContent = 'Location is unavailable in this browser. Search for a city instead.';
     cityInput.focus();
@@ -125,29 +124,46 @@ function detectLocation() {
   locateButton.disabled = true;
   status.textContent = 'Finding your location… You can still search for a city.';
   let completed = false;
+  let phase = 0;
   const fallback = message => {
     if (completed || attempt !== locationAttempt) return;
     completed = true;
     clearTimeout(watchdog);
     locateButton.disabled = false;
-    status.textContent = message + ' Search for a city instead.';
+    status.textContent = message + ' Search for a city instead.' + (weather.querySelector('.forecast') ? ' The previous forecast is still shown.' : '');
     cityInput.focus();
   };
-  const watchdog = setTimeout(() => fallback('Location request timed out.'), 21000);
-  try {
-    navigator.geolocation.getCurrentPosition(position => {
-      if (completed || attempt !== locationAttempt) return;
-      const { latitude, longitude, accuracy } = position.coords;
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
-        fallback('Location returned invalid coordinates.'); return;
-      }
-      completed = true;
-      clearTimeout(watchdog);
-      locateButton.disabled = false;
-      forecast({ name: 'Detected location — looking up city…', detected: true, latitude, longitude, accuracy });
-    }, error => fallback(error.code === 1 ? 'Location permission was denied.' : error.code === 3 ? 'Location request timed out.' : 'Your location could not be determined.'),
-    { timeout: 20000, maximumAge: 0, enableHighAccuracy: true });
-  } catch (error) { fallback('Location is unavailable in this browser.'); }
+  const watchdog = setTimeout(() => fallback('Location request timed out.'), 26000);
+  const requestPosition = highAccuracy => {
+    const requestPhase = ++phase;
+    let received = false;
+    const current = () => !received && !completed && attempt === locationAttempt && phase === requestPhase;
+    try {
+      navigator.geolocation.getCurrentPosition(position => {
+        if (!current()) return;
+        received = true;
+        const { latitude, longitude, accuracy } = position.coords;
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
+          fallback('Location returned invalid coordinates.'); return;
+        }
+        completed = true;
+        clearTimeout(watchdog);
+        locateButton.disabled = false;
+        forecast({ name: 'Detected location — looking up city…', detected: true, latitude, longitude, accuracy });
+      }, error => {
+        if (!current()) return;
+        received = true;
+        if (error.code === 1) { fallback('Location permission was denied.'); return; }
+        if (highAccuracy) {
+          status.textContent = 'Precise location is unavailable. Trying a standard location request… You can still search for a city.';
+          requestPosition(false);
+          return;
+        }
+        fallback(error.code === 3 ? 'Location request timed out.' : 'Your browser could not provide a location. Try this page in another browser.');
+      }, { timeout: highAccuracy ? 15000 : 10000, maximumAge: highAccuracy ? 0 : 60000, enableHighAccuracy: highAccuracy });
+    } catch (error) { fallback('Location is unavailable in this browser.'); }
+  };
+  requestPosition(true);
 }
 locateButton.addEventListener('click', detectLocation);
 detectLocation();

@@ -1,5 +1,5 @@
 pkgname=yttrium-weather
-pkgver=0.1.3
+pkgver=0.1.4
 pkgrel=1
 pkgdesc='Minimal weather web app with optional device location and seven-day forecasts'
 arch=('any')
@@ -16,7 +16,7 @@ source=(
 sha256sums=(
   'b476d91d2e17c83bc121669c8aa666848dd79fcfaa9e5e0db59edb801d5c059e'
   'ec64c8145e313f0351d23356c3ad8b50265a8e762624f4955ff02b5ddf35eb35'
-  '55798e96c2e3e935f52e5d98db045a23f9e34d454a13daef2ba689ca6dfe3d15'
+  '243f5b9ed8ab414526ee478ff4741b3c4fee74b053b12fc23b1502fe5ecfb867'
   '1751dae95e406b467ae88b6042d6915f3aa898711f6cfcc46bce606cd918bfb2'
   '56e4b9094d041893ffb1a40f61be842397b5d09e241c4f5a64bdbca2522694a2'
 )
